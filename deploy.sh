@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy.sh — The National Feed VPS Deployment Script (PM2 + Nginx + Docker DB 5438)
+# deploy.sh — The National Feed VPS Deployment Script (PM2 + Nginx + Docker DB 5439)
 set -e
 
 GREEN='\033[0;32m'
@@ -28,7 +28,7 @@ pm2 save
 # 5. Health Check
 echo "🔥 Checking application health..."
 sleep 3
-if curl -s -f -H "Host: thenationalfeed.com" http://127.0.0.1:3002 > /dev/null; then
+if curl -s -f -H "Host: thenationalfeed.com" http://127.0.0.1:3001 > /dev/null; then
     echo -e "${GREEN}✓ Application updated successfully!${NC}"
 else
     echo -e "${RED}⚠️ Warning: Health check returned non-200. Check pm2 logs thenationalfeed${NC}"
