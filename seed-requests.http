@@ -1,0 +1,117 @@
+### The National Feed Seed REST API Requests
+### Use with VS Code REST Client, IntelliJ HTTP Client, Postman, or curl
+
+@baseUrl = http://localhost:3000
+@adminEmail = admin@thenationalfeed.com
+@adminPassword = adminpassword123
+
+### 1. Authenticate & Obtain JWT Token
+# @name login
+POST {{baseUrl}}/api/users/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Store token for subsequent requests
+@authToken = {{login.response.body.token}}
+
+### 2. Fetch Existing Articles (Check Count)
+GET {{baseUrl}}/api/articles?limit=100
+Authorization: JWT {{authToken}}
+
+### 3. Create or Ensure Author
+# @name createAuthor
+POST {{baseUrl}}/api/authors
+Authorization: JWT {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "The National Feed Newsroom",
+  "slug": "thenationalfeed-newsroom",
+  "role": "Staff Reporter",
+  "bio": "Comprehensive news coverage and analysis from our correspondents.",
+  "email": "news@thenationalfeed.com"
+}
+
+@authorId = {{createAuthor.response.body.doc.id}}
+
+### 4. Create External Media Record (Cover Image)
+# @name createMedia
+POST {{baseUrl}}/api/media
+Authorization: JWT {{authToken}}
+Content-Type: application/json
+
+{
+  "alt": "House Passes Bipartisan Housing Bill Targeting Corporate Homebuyers",
+  "caption": "House Passes Bipartisan Housing Bill Targeting Corporate Homebuyers",
+  "source": "external",
+  "externalUrl": "https://thenationalfeed.com/media/sample-cover.jpg"
+}
+
+@mediaId = {{createMedia.response.body.doc.id}}
+
+### 5. Create Article Sample via HTTP POST
+POST {{baseUrl}}/api/articles
+Authorization: JWT {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "House Passes Bipartisan Housing Bill Targeting Corporate Homebuyers",
+  "slug": "house-passes-bipartisan-housing-bill-targeting-corporate",
+  "excerpt": "The House delivered a massive bipartisan victory this week, passing a housing bill designed to expand homeownership, lower costs, and limit institutional buyers.",
+  "status": "published",
+  "publishedAt": "2026-08-24T01:34:36.010Z",
+  "isBreaking": false,
+  "isFeatured": true,
+  "readTime": 4,
+  "credit": "The National Feed Wire Service",
+  "coverImage": "{{mediaId}}",
+  "author": "{{authorId}}",
+  "tags": [
+    { "tag": "politics" },
+    { "tag": "housing" },
+    { "tag": "economy" }
+  ],
+  "content": {
+    "root": {
+      "type": "root",
+      "format": "",
+      "indent": 0,
+      "version": 1,
+      "children": [
+        {
+          "type": "paragraph",
+          "format": "",
+          "indent": 0,
+          "version": 1,
+          "children": [
+            {
+              "type": "text",
+              "text": "The House delivered a massive bipartisan victory this week, passing a housing bill designed to expand homeownership, lower costs, and limit institutional homebuyers.",
+              "version": 1
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "og": {
+    "metaTitle": "House Passes Bipartisan Housing Bill Targeting Corporate Homebuyers",
+    "metaDescription": "The House delivered a massive bipartisan victory this week."
+  },
+  "meta": {
+    "title": "House Passes Bipartisan Housing Bill Targeting Corporate Homebuyers",
+    "description": "The House delivered a massive bipartisan victory this week."
+  }
+}
+
+### 6. Delete Article by ID
+DELETE {{baseUrl}}/api/articles/1
+Authorization: JWT {{authToken}}
+
+### 7. Delete Media by ID
+DELETE {{baseUrl}}/api/media/1
+Authorization: JWT {{authToken}}
