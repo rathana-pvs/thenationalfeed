@@ -279,7 +279,7 @@ export function InfiniteArticleScroll({ initialArticle, initialRelated }: Infini
       {/* Feed Widget — rendered ONCE at the very bottom, outside the article loop */}
       {!hasMore && widgetFeed && (
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
-          <AdskeeperWidget widgetId={widgetFeed} />
+          <AdskeeperWidget widgetId={widgetFeed} adType="feed" />
         </div>
       )}
     </div>

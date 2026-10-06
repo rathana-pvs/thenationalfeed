@@ -69,16 +69,18 @@ export const RichText = ({
   const secondaryWidgetId =
     adWidgetId2 || secondAdWidgetId || process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_IN_ARTICLE_2 || ''
 
-  // Count total paragraphs
+  // Locate the end of Paragraph 1 and Paragraph 2
   let paragraphCount = 0
-  let splitIndex = nodes.length
+  let p1End = nodes.length
+  let p2End = nodes.length
 
   for (let i = 0; i < nodes.length; i++) {
     if (nodes[i].type === 'paragraph') {
       paragraphCount++
-      // Split immediately after Paragraph 1
-      if (paragraphCount === 1) {
-        splitIndex = i + 1
+      if (paragraphCount === 1) p1End = i + 1
+      if (paragraphCount === 2) {
+        p2End = i + 1
+        break
       }
     }
   }
@@ -90,15 +92,16 @@ export const RichText = ({
         {serializeLexical(nodes, 'full')}
         {primaryWidgetId && (
           <div className="my-6 w-full flex justify-center items-center">
-            <AdskeeperWidget widgetId={primaryWidgetId} className="!my-0" />
+            <AdskeeperWidget widgetId={primaryWidgetId} adType="in-article-1" className="!my-0" />
           </div>
         )}
       </div>
     )
   }
 
-  const topNodes = nodes.slice(0, splitIndex) // Paragraph 1
-  const remainingNodes = nodes.slice(splitIndex) // Paragraph 2, 3, 4...
+  const topNodes = nodes.slice(0, p1End) // Paragraph 1
+  const midNodes = nodes.slice(p1End, p2End) // Paragraph 2 (visible)
+  const remainingNodes = nodes.slice(p2End) // Paragraph 3, 4... (behind the gate)
 
   return (
     <div className={`rich-text ${className || ''}`}>
@@ -108,13 +111,16 @@ export const RichText = ({
       {/* Ad after Paragraph 1 */}
       {primaryWidgetId && (
         <div className="my-6 w-full flex justify-center items-center">
-          <AdskeeperWidget widgetId={primaryWidgetId} className="!my-0" />
+          <AdskeeperWidget widgetId={primaryWidgetId} adType="in-article-1" className="!my-0" />
         </div>
       )}
 
-      {!isExpanded ? (
+      {/* Paragraph 2 — fully visible */}
+      {serializeLexical(midNodes, 'mid')}
+
+      {remainingNodes.length === 0 ? null : !isExpanded ? (
         <div className="continue-reading-gate">
-          {/* Paragraph 2 with bottom half blurred */}
+          {/* Paragraph 3 with bottom half blurred */}
           <div className="continue-reading-fade">
             {serializeLexical(remainingNodes.slice(0, 1), 'teaser')}
             <div className="continue-reading-fade-overlay" />
@@ -143,7 +149,7 @@ export const RichText = ({
 
           {secondaryWidgetId && (
             <div className="my-6 w-full flex justify-center items-center">
-              <AdskeeperWidget widgetId={secondaryWidgetId} className="!my-0" />
+              <AdskeeperWidget widgetId={secondaryWidgetId} adType="in-article-2" className="!my-0" />
             </div>
           )}
         </div>

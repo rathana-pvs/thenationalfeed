@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 interface AdskeeperWidgetProps {
   widgetId: string
   className?: string
-  adType?: 'sidebar'
+  adType?: 'sidebar' | 'in-article-1' | 'in-article-2' | 'under-article' | 'feed'
   onlyShowOn?: string
 }
 
@@ -98,7 +98,8 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
 
   useEffect(() => {
     if (isDev) return
-    if (onlyShowOn === 'desktop' && !window.matchMedia('(min-width: 1024px)').matches) return
+    // Wait until the device check resolved (null -> true/false) so we push exactly once per mount
+    if (isAllowedDevice !== true) return
 
     try {
       if (typeof window !== 'undefined') {
@@ -108,9 +109,13 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
     } catch (e) {
       console.error('Adskeeper load error:', e)
     }
-  }, [widgetId, isDev, onlyShowOn])
+  }, [widgetId, isDev, onlyShowOn, isAllowedDevice])
 
   if (isDev) {
+    const inArticle1 = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_IN_ARTICLE_1
+    const inArticle2 = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_IN_ARTICLE_2
+    const underArticle = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_UNDER_ARTICLE
+
     // Sidebar Widget — sticky vertical native ad column
     if (adType === 'sidebar') {
       return (
@@ -167,7 +172,7 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
       )
     }
 
-    if (widgetId === '2043077') {
+    if (adType === 'in-article-1' || (inArticle1 && widgetId === inArticle1)) {
       // In-Article Top: 2-column compact list (replicates ArticleCard size="sm")
       return (
         <div className={`ads-container border border-dashed border-[var(--border)] bg-[var(--bg-card)] rounded-md p-6 my-8 ${className}`}>
@@ -198,10 +203,8 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
       )
     }
 
-
-    if (widgetId === '2044156') {
-      // In-Article Mid (second injection, long reads) — same layout as 2043077
-      // but uses different mock ads so both slots are distinguishable in dev.
+    if (adType === 'in-article-2' || (inArticle2 && widgetId === inArticle2)) {
+      // In-Article Mid (second injection, long reads)
       return (
         <div className={`ads-container border border-dashed border-[var(--border)] bg-[var(--bg-card)] rounded-md p-6 my-8 ${className}`}>
           <span className="text-[9px] font-mono uppercase tracking-[0.2em] opacity-40 block text-center mb-4">
@@ -231,8 +234,7 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
       )
     }
 
-
-    if (widgetId === '2043079') {
+    if (adType === 'under-article' || (underArticle && widgetId === underArticle)) {
       // Under-Article: 2x2 grid (replicates ArticleCard size="md" layout)
       return (
         <div className={`ads-container border border-dashed border-[var(--border)] bg-[var(--bg-card)] rounded-md p-6 my-10 ${className}`}>
@@ -263,7 +265,7 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
       )
     }
 
-    // Default or Feed Widget (2043075): Single-column vertical native feed (realistic Adskeeper feed layout)
+    // Default or Feed Widget: Single-column vertical native feed (realistic Adskeeper feed layout)
     return (
       <div className={`ads-container ${className}`}>
         {/* Dev label */}

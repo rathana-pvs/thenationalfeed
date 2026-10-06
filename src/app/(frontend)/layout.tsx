@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import '@/app/globals.css'
 import Header from '@/components/layout/Header'
 import Navigation from '@/components/layout/Navigation'
@@ -55,6 +54,14 @@ export default async function FrontendLayout({
 
   return (
     <html lang="en">
+      <head>
+        {process.env.NODE_ENV === 'production' && adskeeperSiteId && (
+          <script
+            async
+            src={`https://jsc.adskeeper.com/site/${adskeeperSiteId}.js`}
+          />
+        )}
+      </head>
       <body>
         <NavigationProgress />
         <Header />
@@ -72,13 +79,6 @@ export default async function FrontendLayout({
         <VisitorCounter />
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
-        {process.env.NODE_ENV === 'production' && adskeeperSiteId && (
-          <Script
-            id="adskeeper-loader"
-            src={`https://jsc.adskeeper.com/site/${adskeeperSiteId}.js`}
-            strategy="lazyOnload"
-          />
         )}
       </body>
     </html>
