@@ -243,8 +243,10 @@ a:hover .story-title, .story-title-link:hover { text-decoration: underline; }
 .article-meta-single-line .meta-separator { color: var(--line); font-weight: 700; }
 .article-meta-single-line .publication-date, .article-meta-single-line .read-time, .article-meta-single-line .dateline { white-space: nowrap; }
 .article-hero { width: 100%; max-width: 100%; margin: 0 0 1.5rem 0; }
-.article-caption { padding-top: .45rem; color: var(--quiet); font-size: .75rem; }
 .article-layout { display: grid; grid-template-columns: minmax(0,var(--reading-width)) minmax(250px,320px); justify-content: space-between; gap: 2.5rem; margin-top: 1.5rem; }
+.article-sidebar { align-self: start; position: sticky; top: 5rem; }
+.sidebar-ad-wrapper { display: none; }
+@media (min-width: 1024px) { .sidebar-ad-wrapper { display: block; } }
 /* Executive Summary (Excerpt Callout Box) - Monochrome */
 .article-executive-summary {
   margin: 1.5rem 0;
@@ -433,7 +435,7 @@ a:hover .story-title, .story-title-link:hover { text-decoration: underline; }
   .feature-grid, .topic-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .feature-card:nth-child(3), .topic-card:nth-child(3) { grid-column: 1 / -1; border-left: 0; padding-left: 0; padding-top: 1rem; border-top: 1px solid var(--line); }
   .article-layout { grid-template-columns: minmax(0,var(--reading-width)); }
-  .article-sidebar { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.5rem; }
+  .article-sidebar { position: static; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1.5rem; }
   .related-block { margin-top: 0; }
 }
 
@@ -475,7 +477,7 @@ a:hover .story-title, .story-title-link:hover { text-decoration: underline; }
   .article-title { font-size: 1.6rem; line-height: 1.2; }
   .article-layout { display: block; }
   .article-prose { font-size: 1.05rem; }
-  .article-sidebar { display: block; margin-top: 2.5rem; }
+  .article-sidebar { position: static; display: block; margin-top: 2.5rem; }
   .article-sidebar .most-read { margin-top: 0; }
   .related-block { margin-top: 2rem; }
   .footer-follow { align-items: flex-start; flex-direction: column; }

@@ -6,7 +6,40 @@ interface AdskeeperWidgetProps {
   widgetId: string
   className?: string
   adType?: 'sidebar' | 'in-article-1' | 'in-article-2' | 'under-article' | 'feed'
-  onlyShowOn?: string
+  onlyShowOn?: 'desktop' | 'mobile' | string
+  lazy?: boolean
+  rootMargin?: string
+}
+
+function getMinHeightClass(adType?: string): string {
+  switch (adType) {
+    case 'sidebar':
+      return 'min-h-[300px]'
+    case 'in-article-1':
+    case 'in-article-2':
+      return 'min-h-[220px]'
+    case 'feed':
+      return 'min-h-[320px]'
+    case 'under-article':
+      return 'min-h-[260px]'
+    default:
+      return 'min-h-[200px]'
+  }
+}
+
+// Global helper to safely trigger Adskeeper widget scanning
+function triggerAdskeeperLoad() {
+  if (typeof window === 'undefined') return
+  try {
+    if (typeof (window as any)._mgc?.load === 'function') {
+      (window as any)._mgc.load()
+    } else {
+      window._mgq = window._mgq || []
+      window._mgq.push(['_mgc.load'])
+    }
+  } catch (e) {
+    console.error('Adskeeper load error:', e)
+  }
 }
 
 // Simulated clickbait-style native advertisement mock data
@@ -73,20 +106,30 @@ const MOCK_ADS = [
   }
 ]
 
-// Module-level flag: _mgc.load must only fire ONCE per page session.
-// Calling it per-widget causes Adskeeper to treat the second+ calls as
-// duplicates and silently skip already-scanned slots (e.g. widget 2044156).
-// Instead, the FIRST widget to enter the viewport triggers the global scan;
-export default function AdskeeperWidget({ widgetId, className = '', adType, onlyShowOn }: AdskeeperWidgetProps) {
+export default function AdskeeperWidget({
+  widgetId,
+  className = '',
+  adType,
+  onlyShowOn,
+  lazy = true,
+  rootMargin,
+}: AdskeeperWidgetProps) {
   if (!widgetId) return null
 
   const isDev = process.env.NODE_ENV === 'development'
   const containerRef = useRef<HTMLDivElement>(null)
   const [isAllowedDevice, setIsAllowedDevice] = useState<boolean | null>(null)
+  const [isInView, setIsInView] = useState(!lazy)
 
   useEffect(() => {
     if (onlyShowOn === 'desktop') {
       const mq = window.matchMedia('(min-width: 1024px)')
+      setIsAllowedDevice(mq.matches)
+      const handler = (e: MediaQueryListEvent) => setIsAllowedDevice(e.matches)
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
+    } else if (onlyShowOn === 'mobile') {
+      const mq = window.matchMedia('(max-width: 1023px)')
       setIsAllowedDevice(mq.matches)
       const handler = (e: MediaQueryListEvent) => setIsAllowedDevice(e.matches)
       mq.addEventListener('change', handler)
@@ -96,22 +139,66 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
     }
   }, [onlyShowOn])
 
+  // Lazy-load widget when it approaches the viewport to boost viewability (Visibility %)
+  useEffect(() => {
+    if (!lazy) {
+      setIsInView(true)
+      return
+    }
+    if (isInView) return
+    if (isAllowedDevice === false) return
+
+    const el = containerRef.current
+    if (!el) return
+
+    if (!('IntersectionObserver' in window)) {
+      setIsInView(true)
+      return
+    }
+
+    const defaultMargin = adType === 'feed' ? '400px 0px' : '300px 0px'
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setIsInView(true)
+          observer.disconnect()
+        }
+      },
+      {
+        rootMargin: rootMargin || defaultMargin,
+        threshold: 0,
+      }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [lazy, isInView, isAllowedDevice, rootMargin, adType])
+
+  // Trigger Adskeeper when widget container enters view
   useEffect(() => {
     if (isDev) return
-    // Wait until the device check resolved (null -> true/false) so we push exactly once per mount
-    if (isAllowedDevice !== true) return
+    if (!isInView || isAllowedDevice !== true) return
 
-    try {
-      if (typeof window !== 'undefined') {
-        window._mgq = window._mgq || []
-        window._mgq.push(['_mgc.load'])
-      }
-    } catch (e) {
-      console.error('Adskeeper load error:', e)
-    }
-  }, [widgetId, isDev, onlyShowOn, isAllowedDevice])
+    const timer = setTimeout(() => {
+      triggerAdskeeperLoad()
+    }, 50)
+
+    return () => clearTimeout(timer)
+  }, [widgetId, isDev, isInView, isAllowedDevice])
 
   if (isDev) {
+    if (onlyShowOn === 'desktop' && isAllowedDevice !== true) return null
+    if (onlyShowOn === 'mobile' && isAllowedDevice !== true) return null
+
+    if (!isInView) {
+      return (
+        <div
+          ref={containerRef}
+          className={`ads-container ${getMinHeightClass(adType)} ${className}`}
+        />
+      )
+    }
+
     const inArticle1 = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_IN_ARTICLE_1
     const inArticle2 = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_IN_ARTICLE_2
     const underArticle = process.env.NEXT_PUBLIC_ADS_KEEPER_WIDGET_UNDER_ARTICLE
@@ -339,20 +426,26 @@ export default function AdskeeperWidget({ widgetId, className = '', adType, only
     )
   }
 
-  // Device restriction check (e.g. onlyShowOn="desktop"):
+  // Device restriction check:
   if (onlyShowOn === 'desktop' && isAllowedDevice !== true) return null
+  if (onlyShowOn === 'mobile' && isAllowedDevice !== true) return null
+
+  const minHeightClass = getMinHeightClass(adType)
 
   return (
     <div
       ref={containerRef}
-      className={`adskeeper-widget-container my-6 w-full flex justify-center ${className}`}
+      className={`adskeeper-widget-container my-6 w-full flex justify-center ${minHeightClass} ${className}`}
+      data-ad-type={adType}
     >
-      <div
-        suppressHydrationWarning
-        data-type="_mgwidget"
-        data-widget-id={widgetId}
-        style={{ width: '100%' }}
-      />
+      {isInView && (
+        <div
+          suppressHydrationWarning
+          data-type="_mgwidget"
+          data-widget-id={widgetId}
+          style={{ width: '100%' }}
+        />
+      )}
     </div>
   )
 }

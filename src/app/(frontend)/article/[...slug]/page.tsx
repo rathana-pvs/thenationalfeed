@@ -211,12 +211,16 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
 
           <aside className="article-sidebar">
-            <MostRead articles={allArticles} limit={6} />
             {widgetSidebar && (
-              <div className="mt-4 mb-6 sticky top-20">
-                <AdskeeperWidget widgetId={widgetSidebar} adType="sidebar" />
+              <div className="hidden lg:block sidebar-ad-wrapper mb-6">
+                <AdskeeperWidget
+                  widgetId={widgetSidebar}
+                  adType="sidebar"
+                  onlyShowOn="desktop"
+                />
               </div>
             )}
+            <MostRead articles={allArticles} limit={5} />
             {relatedArticles.length > 0 && (
               <section className="related-block" aria-labelledby="related-heading">
                 <h2 id="related-heading">Related</h2>
